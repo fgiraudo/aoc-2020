@@ -1,121 +1,105 @@
 import UIKit
 
-if var passportsInput = Utils().readInput(from: "input-day4") {
-    print(passportsInput)
-    
-    passportsInput.removeLast()
-    
-    let passports = parsePassports(input: passportsInput)
-    
-    var counter = 0
-    
-    for passport in passports {
-        if validate(passport) {
-            counter += 1
-        }
-    }
-    
-    print("Number of valid passports: \(counter)")
-}
+main()
 
-func parsePassports(input: [String]) -> [[String: String]] {
-    var passports: [[String: String]] = [[:]]
-    
-    var index = 0
-    
-    for passport in input {
-        if passport.isEmpty {
-            index += 1
+func main() {
+    if var boardingPasses = Utils().readInput(from: "input-day5") {
+        boardingPasses.removeLast()
+        
+        print(boardingPasses)
+        
+        var maxSeatID = 0
+        
+//        print("Row: \(column(for: "RRR"))")
+        
+        for boardingPass in boardingPasses {
+            let seat = findSeat(for: boardingPass)
             
-            passports.append([:])
+            print(seat)
             
-            continue
+            let seatID = calculateSeatID(for: seat)
+
+            if seatID > maxSeatID {
+                maxSeatID = seatID
+            }
         }
         
-        let entries = passport.split(separator: " ")
+        print(findMissingSeatID(in: boardingPasses))
         
-        for entry in entries {
-            guard let key = entry.split(separator: ":").first, let value = entry.split(separator: ":").last else { continue }
+        print(maxSeatID)
+    }
+}
+
+func findSeat(for boardingPass: String) -> (Int, Int) {
+    let rowInput = String(boardingPass.prefix(7))
+    let columnInput = String(boardingPass.suffix(3))
+    
+    return (row(for: rowInput), column(for: columnInput))
+}
+
+func row(for rowInput: String) -> Int {
+    var range = 0 ..< 127
+    
+    for (index, char) in rowInput.enumerated() {
+        if char == "F" {
+            if index == rowInput.count - 1 {
+                return range.first ?? 0
+            }
             
-            passports[index][String(key)] = String(value)
+            range = range.prefix((range.max()! - range.min()! + 1) / 2)
+        } else {
+            if index == rowInput.count - 1 {
+                return (range.first ?? 0) + 1
+            }
+            
+            range = range.suffix((range.max()! - range.min()! + 1) / 2)
         }
     }
     
-    return passports
+    return 0
 }
 
-func validate(_ passport: [String: String]) -> Bool {
-    let requiredFields = Set(["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"])
+func column(for columnInput: String) -> Int {
+    var range = 0 ..< 7
     
-    guard requiredFields.isSubset(of: passport.keys),
-          let birthYearStr = passport["byr"], let birthYear = Int(birthYearStr), birthYear >= 1920 && birthYear <= 2002,
-          let issueYearStr = passport["iyr"], let issueYear = Int(issueYearStr), issueYear >= 2010 && issueYear <= 2020,
-          let expirationYearStr = passport["eyr"], let expirationYear = Int(expirationYearStr), expirationYear >= 2020 && expirationYear <= 2030 else {
-        return false
-    }
-    
-    guard validate(height: passport["hgt"]) else {
-        return false
-    }
-    
-    guard validate(hairColor: passport["hcl"]) else {
-        return false
-    }
-    
-    guard validate(eyeColor: passport["ecl"]) else {
-        return false
-    }
-    
-    guard validate(passportID: passport["pid"]) else {
-        return false
-    }
-    
-    return true
-}
-
-func validate(height: String?) -> Bool {
-    guard let height = height else {
-        return false
-    }
-    
-    let unit = height.suffix(2)
-    
-    if unit == "cm" {
-        guard let value = Int(height.prefix(3)), value >= 150 && value <= 193 else {
-            return false
+    for (index, char) in columnInput.enumerated() {
+        if char == "L" {
+            if index == columnInput.count - 1 {
+                return range.first ?? 0
+            }
+            
+            range = range.prefix((range.max()! - range.min()! + 1) / 2)
+        } else {
+            if index == columnInput.count - 1 {
+                return (range.first ?? 0) + 1
+            }
+            
+            range = range.suffix((range.max()! - range.min()! + 1) / 2)
         }
-        
-        return true
     }
     
-    if unit == "in" {
-        guard let value = Int(height.prefix(2)), value >= 59 && value <= 76 else {
-            return false
+    return 0
+}
+
+func calculateSeatID(for seat: (Int, Int)) -> Int {
+    seat.0 * 8 + seat.1
+}
+
+func findMissingSeatID(in boardingPasses: [String]) -> Int {
+    var seatMap = Array(repeating: 0, count: 979)
+    
+    for boardingPass in boardingPasses {
+        let seat = findSeat(for: boardingPass)
+        let seatID = calculateSeatID(for: seat)
+
+        seatMap[seatID] = 1
+    }
+    
+    for index in seatMap.firstIndex(of: 1)! ..< seatMap.count {
+        if seatMap[index] == 0 {
+            return index
         }
-        
-        return true
     }
     
-    return false
+    return 0
 }
-
-func validate(hairColor: String?) -> Bool {
-    guard let hairColor = hairColor else {
-        return false
-    }
-    
-    return hairColor.range(of: "^[#][0-9a-f]{6}$", options: .regularExpression) != nil
-}
-
-func validate(eyeColor: String?) -> Bool {
-    ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(eyeColor)
-}
-
-func validate(passportID: String?) -> Bool {
-    guard let passportID = passportID else {
-        return false
-    }
-    
-    return passportID.range(of: "^[0-9]{9}$", options: .regularExpression) != nil
-}
-
