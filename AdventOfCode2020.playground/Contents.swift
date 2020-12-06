@@ -3,103 +3,46 @@ import UIKit
 main()
 
 func main() {
-    if var boardingPasses = Utils().readInput(from: "input-day5") {
-        boardingPasses.removeLast()
+    if var answersInput = Utils().readInput(from: "input-day6") {
+        let answers = parse(answersInput)
         
-        print(boardingPasses)
+        var counter = 0
         
-        var maxSeatID = 0
-        
-//        print("Row: \(column(for: "RRR"))")
-        
-        for boardingPass in boardingPasses {
-            let seat = findSeat(for: boardingPass)
-            
-            print(seat)
-            
-            let seatID = calculateSeatID(for: seat)
-
-            if seatID > maxSeatID {
-                maxSeatID = seatID
-            }
+        for groupAnswer in answers {
+            counter += groupAnswer.count
         }
         
-        print(findMissingSeatID(in: boardingPasses))
-        
-        print(maxSeatID)
+        print(counter)
     }
 }
 
-func findSeat(for boardingPass: String) -> (Int, Int) {
-    let rowInput = String(boardingPass.prefix(7))
-    let columnInput = String(boardingPass.suffix(3))
+func parse(_ input: [String]) -> [Set<Character>] {
+    var result = [Set<Character>]()
+    var groupAnswer = Set<Character>()
+    var isFirstAnswer = true
     
-    return (row(for: rowInput), column(for: columnInput))
-}
-
-func row(for rowInput: String) -> Int {
-    var range = 0 ..< 127
-    
-    for (index, char) in rowInput.enumerated() {
-        if char == "F" {
-            if index == rowInput.count - 1 {
-                return range.first ?? 0
+    for answer in input {
+        if answer.isEmpty {
+            result.append(groupAnswer)
+            groupAnswer.removeAll()
+            isFirstAnswer = true
+            continue
+        }
+        
+        if isFirstAnswer {
+            for char in answer {
+                groupAnswer.insert(char)
             }
+            isFirstAnswer = false
             
-            range = range.prefix((range.max()! - range.min()! + 1) / 2)
         } else {
-            if index == rowInput.count - 1 {
-                return (range.first ?? 0) + 1
+            for char in groupAnswer {
+                if answer.contains(char) == false {
+                    groupAnswer.remove(char)
+                }
             }
-            
-            range = range.suffix((range.max()! - range.min()! + 1) / 2)
         }
     }
     
-    return 0
-}
-
-func column(for columnInput: String) -> Int {
-    var range = 0 ..< 7
-    
-    for (index, char) in columnInput.enumerated() {
-        if char == "L" {
-            if index == columnInput.count - 1 {
-                return range.first ?? 0
-            }
-            
-            range = range.prefix((range.max()! - range.min()! + 1) / 2)
-        } else {
-            if index == columnInput.count - 1 {
-                return (range.first ?? 0) + 1
-            }
-            
-            range = range.suffix((range.max()! - range.min()! + 1) / 2)
-        }
-    }
-    
-    return 0
-}
-
-func calculateSeatID(for seat: (Int, Int)) -> Int {
-    seat.0 * 8 + seat.1
-}
-
-func findMissingSeatID(in boardingPasses: [String]) -> Int {
-    var seatMap = Array(repeating: 0, count: 979)
-    
-    for boardingPass in boardingPasses {
-        let seat = findSeat(for: boardingPass)
-        let seatID = calculateSeatID(for: seat)
-
-        seatMap[seatID] = 1
-    }
-    
-    for index in seatMap.firstIndex(of: 1)! ..< seatMap.count {
-        if seatMap[index] == 0 {
-            return index
-        }
-    }
-    
-    return 0
+    return result
 }
